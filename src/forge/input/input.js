@@ -1,5 +1,3 @@
-import { max } from "three/examples/jsm/nodes/Nodes.js";
-
 const Input = {
   mouse: {
     clientX: -1,
