@@ -139,15 +139,15 @@ export function Init(config) {
   Input.tickRate = config.input.tickRate;
 
   updateOnResize();
-  window.addEventListener("resize", () => {
-    updateOnResize();
-    if (!state.alertIssued) {
-      alert(
-        "Window resizing not yet supported by input module. Please refresh the page."
-      );
-      state.alertIssued = true;
-    }
-  });
+  // window.addEventListener("resize", () => {
+  //   updateOnResize();
+  //   if (!state.alertIssued) {
+  //     alert(
+  //       "Window resizing not yet supported by input module. Please refresh the page."
+  //     );
+  //     state.alertIssued = true;
+  //   }
+  // });
 
   document.addEventListener("mousedown", toggleMouseDown);
   document.addEventListener("mousedown", draw);

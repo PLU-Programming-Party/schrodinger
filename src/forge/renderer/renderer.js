@@ -41,9 +41,9 @@ function fetchCanvas(renderContext) {
 
   updateCanvas(renderContext);
 
-  window.addEventListener("resize", () => {
-    updateCanvas(renderContext);
-  });
+  // window.addEventListener("resize", () => {
+  //   updateCanvas(renderContext);
+  // });
 
   return renderContext;
 }
