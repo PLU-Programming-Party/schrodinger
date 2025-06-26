@@ -25,7 +25,7 @@ function ResizeBoth(renderContext, state) {
 }
 
 window.addEventListener("resize", () => {
-    handleResize(renderContext, state);
+    ResizeBoth(renderContext, state);
     if (!state.alertIssued) {
        alert(
          "Error with window resizing. Please refresh the page."
