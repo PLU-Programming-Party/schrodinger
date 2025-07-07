@@ -5,12 +5,16 @@ function ResizeBoth(renderContext, state) {
     // Update canvas and renderer dimensions
   const canvas = renderContext.canvas;
   const rect = canvas.canvas.getBoundingClientRect();
+  canvas.rect = rect;
   canvas.width = rect.width;
   canvas.height = rect.height;
   canvas.top = rect.top;
   canvas.left = rect.left;
   canvas.gridWidth = Math.floor(canvas.width / state.cellSize);
   canvas.gridHeight = Math.floor(canvas.height / state.cellSize);
+
+  //Update Cell Size (In Progress)
+  state.cellSize = state.cellSize * (canvas.gridWidth/state.window.gridWidth);
 
   // Update input state dimensions
   state.window.gridWidth = canvas.gridWidth;

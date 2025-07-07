@@ -94,8 +94,8 @@ function draw(event) {
 function updateMousePos(event) {
   const width = window.innerWidth;
   const height = window.innerHeight;
-  const gridWidth = width / state.config.core.grid.cellSize;
-  const gridHeight = height / state.config.core.grid.cellSize;
+  const gridWidth = width / state.cellSize;
+  const gridHeight = height / state.cellSize;
   const x = Math.floor((event.clientX / width) * gridWidth);
   const y = Math.floor(gridHeight - (event.clientY / height) * gridHeight);
 
