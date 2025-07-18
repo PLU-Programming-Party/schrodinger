@@ -108,6 +108,36 @@ function createBindGroupLayout(renderContext) {
         visibility: GPUShaderStage.COMPUTE,
         buffer: { type: "storage" },
       },
+      {
+        binding: 4,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+        buffer: { type: "read-only-storage" },
+      },
+      {
+        binding: 5,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+        buffer: { type: "read-only-storage" },
+      },
+            {
+        binding: 6,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+        buffer: { type: "read-only-storage" },
+      },
+      {
+        binding: 7,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+        buffer: { type: "read-only-storage" },
+      },
+      {
+        binding: 8,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+        buffer: { type: "read-only-storage" },
+      },
+            {
+        binding: 9,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
+        buffer: { type: "read-only-storage" },
+      },
     ],
   });
 
@@ -356,8 +386,15 @@ export async function Init(config) {
   rend.cellStateArray = rend.stateGrid.GetArray();
 
   rend.cellStateBuffers = [
-    createStorageBuffer(rend, rend.cellStateArray, "Cell State A"),
-    createStorageBuffer(rend, rend.cellStateArray, "Cell State B"),
+    createStorageBuffer(rend, rend.cellStateArray, "Pressure State A"),
+    createStorageBuffer(rend, rend.cellStateArray, "Pressure State B"),
+    createStorageBuffer(rend, rend.cellStateArray, "xVelo State A"),
+    createStorageBuffer(rend, rend.cellStateArray, "xVelo State B"),
+    createStorageBuffer(rend, rend.cellStateArray, "yVelo State A"),
+    createStorageBuffer(rend, rend.cellStateArray, "yVelo State B"),
+    createStorageBuffer(rend, rend.cellStateArray, "Viscosity State A"),
+    createStorageBuffer(rend, rend.cellStateArray, "Viscosity State B"),
+
   ];
 
   rend.inputGrid = new Grid(rend.canvas.gridWidth, rend.canvas.gridHeight);
@@ -386,19 +423,31 @@ export async function Init(config) {
   return rend;
 }
 
-export function PreRender(rend) {
+export function PreRender(rend) { // look here Keaton for how to add buffers
   const bindGroups = [
     CreateBindGroup(rend, [
       rend.uniformBuffer,
       rend.cellStateBuffers[0],
       rend.inputStateBuffer,
       rend.cellStateBuffers[1],
+      rend.cellStateBuffers[2], //bind groups for x velo
+      rend.cellStateBuffers[3],
+      rend.cellStateBuffers[4], //bind groups for y velo
+      rend.cellStateBuffers[5],
+      rend.cellStateBuffers[6], //bind groups for viscosity
+      rend.cellStateBuffers[7]
     ]),
     CreateBindGroup(rend, [
       rend.uniformBuffer,
       rend.cellStateBuffers[1],
       rend.inputStateBuffer,
       rend.cellStateBuffers[0],
+      rend.cellStateBuffers[3],
+      rend.cellStateBuffers[2], // cell state is not populated until in the shader, when user input happens
+      rend.cellStateBuffers[5],
+      rend.cellStateBuffers[4],
+      rend.cellStateBuffers[6], //bind groups for viscosity
+      rend.cellStateBuffers[7]
     ]),
   ];
 
