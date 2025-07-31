@@ -81,7 +81,7 @@ function fetchRenderLayouts(renderContext) {
   return renderContext;
 }
 
-function createBindGroupLayout(renderContext) {
+function createBindGroupLayout(renderContext) { // add a uniform buffer for viscosity
   const bindGroupLayout = renderContext.gpu.device.createBindGroupLayout({
     label: "Bind Group Layout",
     entries: [
@@ -115,8 +115,8 @@ function createBindGroupLayout(renderContext) {
       },
       {
         binding: 5,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
-        buffer: { type: "read-only-storage" },
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: { type: "storage" },
       },
             {
         binding: 6,
@@ -125,18 +125,8 @@ function createBindGroupLayout(renderContext) {
       },
       {
         binding: 7,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
-        buffer: { type: "read-only-storage" },
-      },
-      {
-        binding: 8,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
-        buffer: { type: "read-only-storage" },
-      },
-            {
-        binding: 9,
-        visibility: GPUShaderStage.VERTEX | GPUShaderStage.COMPUTE,
-        buffer: { type: "read-only-storage" },
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: { type: "storage" },
       },
     ],
   });
@@ -392,8 +382,6 @@ export async function Init(config) {
     createStorageBuffer(rend, rend.cellStateArray, "xVelo State B"),
     createStorageBuffer(rend, rend.cellStateArray, "yVelo State A"),
     createStorageBuffer(rend, rend.cellStateArray, "yVelo State B"),
-    createStorageBuffer(rend, rend.cellStateArray, "Viscosity State A"),
-    createStorageBuffer(rend, rend.cellStateArray, "Viscosity State B"),
 
   ];
 
@@ -427,27 +415,23 @@ export function PreRender(rend) { // look here Keaton for how to add buffers
   const bindGroups = [
     CreateBindGroup(rend, [
       rend.uniformBuffer,
-      rend.cellStateBuffers[0],
       rend.inputStateBuffer,
+      rend.cellStateBuffers[0],
       rend.cellStateBuffers[1],
       rend.cellStateBuffers[2], //bind groups for x velo
       rend.cellStateBuffers[3],
       rend.cellStateBuffers[4], //bind groups for y velo
-      rend.cellStateBuffers[5],
-      rend.cellStateBuffers[6], //bind groups for viscosity
-      rend.cellStateBuffers[7]
+      rend.cellStateBuffers[5]
     ]),
     CreateBindGroup(rend, [
       rend.uniformBuffer,
-      rend.cellStateBuffers[1],
       rend.inputStateBuffer,
+      rend.cellStateBuffers[1],
       rend.cellStateBuffers[0],
       rend.cellStateBuffers[3],
       rend.cellStateBuffers[2], // cell state is not populated until in the shader, when user input happens
       rend.cellStateBuffers[5],
-      rend.cellStateBuffers[4],
-      rend.cellStateBuffers[6], //bind groups for viscosity
-      rend.cellStateBuffers[7]
+      rend.cellStateBuffers[4]
     ]),
   ];
 
