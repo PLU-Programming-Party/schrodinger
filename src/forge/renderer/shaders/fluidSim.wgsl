@@ -10,6 +10,8 @@
 
 const TIMESTEP: f32 = 0.05;
 
+// Actually use user input, create a constant velo vector on click
+
 fn reflectBoundary(coord: i32, maxSize: i32) -> u32 { // use this for now
     return u32(clamp(coord, 0, maxSize - 1)); 
 }
@@ -35,6 +37,9 @@ fn bilerp(x: f32, y: f32) -> vec2f {
 
     let t_X: f32 = x - floor(x);
     let t_Y: f32 = y - floor(y);
+
+
+    
 
 
     //X-Component
@@ -65,9 +70,13 @@ fn bilerp(x: f32, y: f32) -> vec2f {
 
 }
 
+
 // fn cellValue(x: i32, y: i32) -> f32 {
 //     return max(pressureIn[cellIndex(vec2i(x, y))], userInput[cellIndex(vec2i(x, y))]);
 // }
+
+// check user input at whatever index, if one, I have a user input, set velo to some value, do something 
+// kinda like the cell value in the pressure shader. Instead of pressure in, just do x velo and y velo in.
 
 @compute
 @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
