@@ -4,6 +4,7 @@ const config = Forge.Config.Init();
 
 const renderContext = await Forge.Renderer.Init(config);
 const input = Forge.Input.Init(config);
+const controller = Forge.Controller.Init()
 
 renderContext.drawArray = Forge.Input.GetDrawArray();
 
@@ -15,3 +16,4 @@ Forge.Renderer.PreRender(renderContext);
 
 Forge.Fire(Forge.Renderer, renderContext);
 Forge.Fire(Forge.Input, input);
+Forge.Fire(Forge.Controller, controller);

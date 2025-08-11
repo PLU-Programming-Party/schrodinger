@@ -2,6 +2,7 @@ export * as Config from "./config/config.js";
 export * as Renderer from "./renderer/renderer.js";
 export * as Input from "./input/input.js";
 export * as Geometry from "./renderer/geometry.js";
+export * as Controller from "./controller.js"
 
 export function Fire(module, context) {
   let lastTime = 0;

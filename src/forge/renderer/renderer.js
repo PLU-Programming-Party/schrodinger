@@ -73,10 +73,24 @@ function updateCanvas(renderContext) {
  * FETCH AND CONFIG RENDER LAYOUTS
  * ***************************************************************************************/
 function fetchRenderLayouts(renderContext) {
-  const renderLayouts = {};
-  renderContext.layouts = renderLayouts;
-  renderLayouts.bindGroupLayout = createBindGroupLayout(renderContext);
-  renderLayouts.pipelineLayout = createPipelineLayout(renderContext);
+  // If layouts already partially exist (e.g. colorBindGroupLayout), keep them.
+  renderContext.layouts = renderContext.layouts || {};
+  // Only create the main bindGroupLayout if it doesn't exist
+  if (!renderContext.layouts.bindGroupLayout) {
+    renderContext.layouts.bindGroupLayout = createBindGroupLayout(renderContext);
+  }
+
+  // pipelineLayout should include both group0 and (optionally) group1.
+  // If colorBindGroupLayout exists, include it; otherwise include only group0.
+  const bindGroupLayouts = [renderContext.layouts.bindGroupLayout];
+  if (renderContext.layouts.colorBindGroupLayout) {
+    bindGroupLayouts.push(renderContext.layouts.colorBindGroupLayout);
+  }
+
+  renderContext.layouts.pipelineLayout = renderContext.gpu.device.createPipelineLayout({
+    label: "Pipeline Layout",
+    bindGroupLayouts,
+  });
 
   return renderContext;
 }
@@ -117,7 +131,7 @@ function createBindGroupLayout(renderContext) {
 function createPipelineLayout(renderContext) {
   const pipelineLayout = renderContext.gpu.device.createPipelineLayout({
     label: "Pipeline Layout",
-    bindGroupLayouts: [renderContext.layouts.bindGroupLayout],
+    bindGroupLayouts: [renderContext.layouts.bindGroupLayout, renderContext.layouts.colorBindGroupLayout],
   });
 
   return pipelineLayout;
@@ -327,6 +341,47 @@ function createRenderTarget(renderContext) {
   return renderTarget;
 }
 
+function createSidebar(rend) {
+  const sidebar = document.createElement('div');
+  sidebar.style.position = 'absolute';
+  sidebar.style.left = '0';
+  sidebar.style.top = '0';
+  sidebar.style.width = '200px';
+  sidebar.style.padding = '10px';
+  sidebar.style.background = '#222';
+  sidebar.style.color = 'white';
+  sidebar.style.fontFamily = 'sans-serif';
+  sidebar.style.zIndex = 100;
+  const color = [0, 0, 0, 1];
+
+  const sliders = ['Red', 'Green', 'Blue', 'Alpha'].map((labelText, index) => {
+    const label = document.createElement('label');
+    label.textContent = labelText + ': ';
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = 0;
+    input.max = 1;
+    input.step = 0.01;
+    input.value = 1;
+
+    input.addEventListener('input', (e) => {
+      color[index] = parseFloat(e.target.value);
+      if (rend && rend.gpu && rend.colorBuffer) {
+      rend.gpu.device.queue.writeBuffer(rend.colorBuffer, 0, new Float32Array(color));
+    }
+    });
+
+    label.appendChild(input);
+    sidebar.appendChild(label);
+    sidebar.appendChild(document.createElement('br'));
+    return input;
+  });
+
+  document.body.appendChild(sidebar);
+}
+
+
 /* ***************************************************************************************
  * INIT RENDERER
  * ***************************************************************************************/
@@ -339,32 +394,62 @@ export async function Init(config) {
   await fetchWebGPU(rend);
   fetchCanvas(rend);
 
+  rend.colorArray = new Float32Array([1, 1, 1, 1]);
+  rend.colorBuffer = rend.gpu.device.createBuffer({
+    label: "Color Buffer",
+    size: rend.colorArray.byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  rend.gpu.device.queue.writeBuffer(rend.colorBuffer, 0, rend.colorArray);
+
+  rend.layouts = {};
+  rend.layouts.colorBindGroupLayout = rend.gpu.device.createBindGroupLayout({
+    entries: [
+    {
+      binding: 0,
+      // add COMPUTE so compute pass can bind it without validation errors
+      visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE,
+      buffer: { type: "uniform" },
+    },
+  ],
+  });
+
+  // Fetch render layouts (this now works because colorBindGroupLayout exists)
   fetchRenderLayouts(rend);
 
+  // Create main pipeline for color
   rend.pipeline = CreatePipeline(rend);
+
+  rend.colorBindGroup = rend.gpu.device.createBindGroup({
+  layout: rend.layouts.colorBindGroupLayout,
+  entries: [
+    { binding: 0, resource: { buffer: rend.colorBuffer } },
+  ],
+  });
+
+  // Add simulation pipeline
   AddSimulationPipeline(rend, config);
 
-  // FULL SETUP
+  // Create uniform buffer for grid size
   rend.uniformBuffer = CreateUniformBuffer(
     rend,
     rend.canvas.gridWidth,
     rend.canvas.gridHeight
   );
 
+  // Set up cell state buffers
   rend.stateGrid = new Grid(rend.canvas.gridWidth, rend.canvas.gridHeight);
-  // rend.stateGrid.Randomize();
   rend.cellStateArray = rend.stateGrid.GetArray();
-
   rend.cellStateBuffers = [
     createStorageBuffer(rend, rend.cellStateArray, "Cell State A"),
     createStorageBuffer(rend, rend.cellStateArray, "Cell State B"),
   ];
 
+  // Input grid
   rend.inputGrid = new Grid(rend.canvas.gridWidth, rend.canvas.gridHeight);
   if (rend.drawArray) {
     rend.inputGrid.SetArray(rend.drawArray);
   }
-
   rend.inputStateArray = rend.inputGrid.GetArray();
   rend.inputStateBuffer = createStorageBuffer(
     rend,
@@ -372,7 +457,7 @@ export async function Init(config) {
     "Input State"
   );
 
-  // Post Processing
+  // Step 10: Post-processing setup
   rend.renderTarget = createRenderTarget(rend);
   const { blurPipeline, blurBindGroupLayout } = await createBlurPipeline(rend);
   rend.postPipeline = blurPipeline;
@@ -382,6 +467,9 @@ export async function Init(config) {
     rend.renderTarget,
     rend.blurBindGroupLayout
   );
+
+  // UI
+  createSidebar(rend);
 
   return rend;
 }
@@ -419,6 +507,11 @@ export function Render(renderContext, numInstances, bindGroup) {
     0,
     renderContext.bindGroups[renderContext.renderStep % 2]
   );
+
+  if (renderContext.colorBindGroup) {
+  computePass.setBindGroup(1, renderContext.colorBindGroup);
+}
+
   const workgroupSize = renderContext.config.simulation.workgroupSize;
   const workgroupWidth = Math.ceil(
     renderContext.canvas.gridWidth / workgroupSize
@@ -431,38 +524,46 @@ export function Render(renderContext, numInstances, bindGroup) {
 
   // Render pass
   const renderPass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        // view: renderContext.canvas.context.getCurrentTexture().createView(),
-        view: renderContext.renderTarget,
-        loadOp: "clear",
-        clearValue: renderContext.config.renderer.clearColor,
-        storeOp: "store",
-      },
-    ],
-  });
+  colorAttachments: [
+    {
+      view: renderContext.renderTarget,
+      loadOp: "clear",
+      clearValue: renderContext.config.renderer.clearColor,
+      storeOp: "store",
+    },
+  ],
+});
 
-  renderPass.setPipeline(renderContext.pipeline);
-  renderPass.setVertexBuffer(0, renderContext.vertices.buffer);
-  renderPass.setBindGroup(0, bindGroup);
-  renderPass.draw(renderContext.vertices.tris.length / 2, numInstances);
-  renderPass.end();
+renderPass.setPipeline(renderContext.pipeline);
+renderPass.setVertexBuffer(0, renderContext.vertices.buffer);
 
-  // Post processing
-  const postPass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: renderContext.canvas.context.getCurrentTexture().createView(),
-        loadOp: "load",
-        clearValue: renderContext.config.renderer.clearColor,
-        storeOp: "store",
-      },
-    ],
-  });
-  postPass.setPipeline(renderContext.postPipeline);
-  postPass.setBindGroup(0, renderContext.postBindGroup);
-  postPass.draw(6);
-  postPass.end();
+// group 0 = grid data
+renderPass.setBindGroup(0, bindGroup);
+
+// group 1 = color uniform (must be set BEFORE draw / BEFORE end)
+if (renderContext.colorBindGroup) {
+  renderPass.setBindGroup(1, renderContext.colorBindGroup);
+}
+
+renderPass.draw(renderContext.vertices.tris.length / 2, numInstances);
+renderPass.end();
+
+// Post processing pass (do NOT use renderPass here)
+const postPass = encoder.beginRenderPass({
+  colorAttachments: [
+    {
+      view: renderContext.canvas.context.getCurrentTexture().createView(),
+      loadOp: "load",
+      clearValue: renderContext.config.renderer.clearColor,
+      storeOp: "store",
+    },
+  ],
+});
+
+postPass.setPipeline(renderContext.postPipeline);
+postPass.setBindGroup(0, renderContext.postBindGroup);
+postPass.draw(6);
+postPass.end();
 
   renderContext.gpu.device.queue.submit([encoder.finish()]);
 }

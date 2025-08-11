@@ -12,6 +12,7 @@ struct VertexOutput {
 @group(0) @binding(0) var<uniform> grid: vec2f;
 @group(0) @binding(1) var<storage> cellState: array<f32>;
 @group(0) @binding(2) var<storage> inputArray: array<f32>;
+@group(1) @binding(0) var<uniform> color: vec4f;
 
 @vertex
 fn vertexMain(input: VertexInput) -> VertexOutput {
@@ -51,9 +52,10 @@ fn fragmentMain(input: FragInput) -> @location(0) vec4f {
     // let g = smoothstep(0.2, 0.85 - 0.15 * shiftedState, shiftedState) ; 
     // let b = smoothstep(0.0, 0.55 - 0.2 * shiftedState, 1.0 - shiftedState); 
 
-    let r = shiftedState + 0.2;
-    let g = shiftedState + 0.2;
-    let b = shiftedState + 0.3;
+    let r = (shiftedState + 0.2 + color[0]) * 0.5;
+    let g = (shiftedState + 0.2 + color[1]) * 0.9;
+    let b = (shiftedState + 0.3 + color[2]) * 1.0;
+    let a = 1.0 * color[3];
 
-    return vec4f(r * 0.5, g * 0.9, b, 1.0);
+    return vec4f(r, g, b, a);
 }

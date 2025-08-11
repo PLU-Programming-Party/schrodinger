@@ -18,7 +18,7 @@ function Init() {
   deepFreeze(renderer);
   deepFreeze(simulation);
   deepFreeze(input);
-  return { core, renderer, simulation, input };
+  return { core, renderer, simulation, input};
 }
 
 export { Init };
