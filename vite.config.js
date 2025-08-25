@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/5s/particles/2025/',
+  base: '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

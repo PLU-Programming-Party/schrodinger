@@ -19,6 +19,8 @@
             if (!navigator.gpu) {
                 document.getElementById('webgpu-error').style.display = 'block';
                 document.querySelector('canvas').style.display = 'none';
+            } else {
+                console.log('WebGPU is supported');
             }
         </script>
         <script type="module" src="src/index.js"></script>
