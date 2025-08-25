@@ -52,9 +52,9 @@ fn fragmentMain(input: FragInput) -> @location(0) vec4f {
     // let g = smoothstep(0.2, 0.85 - 0.15 * shiftedState, shiftedState) ; 
     // let b = smoothstep(0.0, 0.55 - 0.2 * shiftedState, 1.0 - shiftedState); 
 
-    let r = (shiftedState + 0.2 + color[0]) * 0.5;
-    let g = (shiftedState + 0.2 + color[1]) * 0.9;
-    let b = (shiftedState + 0.3 + color[2]) * 1.0;
+    let r = (shiftedState + 0.2 + color[0]);
+    let g = (shiftedState + 0.2 + color[1]);
+    let b = (shiftedState + 0.3 + color[2]);
     let a = 1.0 * color[3];
 
     return vec4f(r, g, b, a);

@@ -343,16 +343,21 @@ function createRenderTarget(renderContext) {
 
 function createSidebar(rend) {
   const sidebar = document.createElement('div');
+  const title = document.createElement("h2");
+  sidebar.appendChild(title);
+  title.textContent = "Color Sliders";
   sidebar.style.position = 'absolute';
   sidebar.style.left = '0';
   sidebar.style.top = '0';
-  sidebar.style.width = '200px';
+  sidebar.style.width = '220px';
   sidebar.style.padding = '10px';
   sidebar.style.background = '#222';
   sidebar.style.color = 'white';
   sidebar.style.fontFamily = 'sans-serif';
   sidebar.style.zIndex = 100;
-  const color = [0, 0, 0, 1];
+  const color = [0, 0, 0.5, 1];
+  rend.gpu.device.queue.writeBuffer(rend.colorBuffer, 0, new Float32Array(color));
+    
 
   const sliders = ['Red', 'Green', 'Blue', 'Alpha'].map((labelText, index) => {
     const label = document.createElement('label');
@@ -363,7 +368,7 @@ function createSidebar(rend) {
     input.min = 0;
     input.max = 1;
     input.step = 0.01;
-    input.value = 1;
+    input.value = color[index];
 
     input.addEventListener('input', (e) => {
       color[index] = parseFloat(e.target.value);
