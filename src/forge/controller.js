@@ -1,5 +1,6 @@
 import * as Renderer from "./renderer/renderer.js";
 import * as Input from "./input/input.js";
+import { Config } from "./forge.js";
 
 function ResizeBoth(renderContext, state) {
     // Update canvas and renderer dimensions
@@ -39,3 +40,7 @@ window.addEventListener("resize", () => {
     
      return renderContext;
 });
+
+export function Init(config) {
+
+}
