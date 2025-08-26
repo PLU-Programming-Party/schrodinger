@@ -1,5 +1,5 @@
 # Welcome!
-*Project Shrödinger* is intended to be a fun little toy simulator, where users can configure a simple set of rules to implement their own cellular automata. 
+*Project Schrödinger* is intended to be a fun little toy simulator, where users can configure a simple set of rules to implement their own cellular automata. 
 
 The codebase currently implements an interactive pressure/wave simulation. This summer (2025), we will build on top of the existing code base to turn this into a more sophisticated simulation, capable of running a more diverse set of models.
 
