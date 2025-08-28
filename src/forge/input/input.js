@@ -1,29 +1,37 @@
+// ----------------------------------------------------------------
+// Input state (mouse + tickRate)
+// ----------------------------------------------------------------
 const Input = {
   mouse: {
-    clientX: -1,
+    clientX: -1, // Raw pixel-based mouse position from brower events (Origin: top-left)
     clientY: -1,
-    gridX: -1,
-    gridY: -1,
+    gridX: -1, // Transformed coordinates mapped onto the simulation grid (Origin: bottom-left)
+    gridY: -1, 
     isDown: false,
   },
   tickRate: 60,
 };
 
+//----------------------------------------------------------------
+// Core simulation state
+//----------------------------------------------------------------
 const state = {
-  config: {},
-  proxy: {},
-  drawArray: [],
+  config: {}, // Configuration values loaded at Init
+  proxy: {},  // Read-only proxy to Input
+  drawArray: [],  // 2D grid flattened into 1D array
   window: {
     gridWidth: 0,
     gridHeight: 0,
   },
   cellSize: 0,
   initialized: false,
-  drawBuffer: [],
-  decayCounter: 0,
-  alertIssued: false,
+  drawBuffer: [], // Buffer of draw positions to apply
+  decayCounter: 0, // Counter for handling draw decay
 };
 
+// ----------------------------------------------------------------
+// Utility: Make object read-only (deep proxy)
+// ----------------------------------------------------------------
 function deepProxy(target) {
   if (target === null || typeof target !== "object") {
     return target;
@@ -46,18 +54,76 @@ function deepProxy(target) {
   });
 }
 
-function toggleMouseDown(event) {
-  Input.mouse.isDown = !Input.mouse.isDown;
-}
-
+// ----------------------------------------------------------------
+// Utility: Clamp a value between min and max
+// ----------------------------------------------------------------
 function clamp(value, min, max) {
   const result = Math.min(Math.max(value, min), max);
   return result;
 }
 
+// ----------------------------------------------------------------
+// Input handling (mouse)
+// ----------------------------------------------------------------
+function toggleMouseDown(event) {
+  Input.mouse.isDown = !Input.mouse.isDown;
+}
+
+function updateMousePos(event) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const gridWidth = state.window.gridWidth;
+  const gridHeight = state.window.gridHeight;
+
+  // ----------------------------
+  // Convert mouse position (pixels) → grid coordinates (cells)
+  // ----------------------------
+  // clientX / clientY: raw mouse position in pixels (viewport-based, top-left origin)
+  // gridX / gridY: mapped mouse position into the simulation grid (cell-based)
+  //   - gridX is scaled across gridWidth.
+  //   - gridY is inverted so (0,0) is bottom-left instead of top-left.
+  const x = Math.floor((event.clientX / width) * gridWidth);
+  const y = Math.floor(gridHeight - (event.clientY / height) * gridHeight);
+
+  // Store raw mouse position (pixels)
+  Input.mouse.clientX = event.clientX;
+  Input.mouse.clientY = event.clientY;
+
+  // Store converted grid position (cells)
+  Input.mouse.gridX = clamp(x, 0, gridWidth - 1);
+  Input.mouse.gridY = clamp(y, 0, gridHeight - 1);
+}
+
+function draw(event) {
+  if (Input.mouse.isDown) {
+    const x = clamp(Input.mouse.gridX, 0, state.window.gridWidth - 1);
+    const y = clamp(Input.mouse.gridY, 0, state.window.gridHeight - 1);
+    
+    const radius = state.config.input.brushSize;
+    const positions = getPositionsWithinRadius({ x, y }, radius);
+    
+    for (const { x, y } of positions) {
+      state.drawBuffer.push({ x, y });
+    }
+  }
+}
+
+
+// ----------------------------------------------------------------
+// Grid utilities
+// ----------------------------------------------------------------
+function configureGrid() {
+  state.window.gridWidth = Math.floor(window.innerWidth / state.cellSize);
+  state.window.gridHeight = Math.floor(window.innerHeight / state.cellSize);
+  state.drawArray = new Float32Array(
+    state.window.gridWidth * state.window.gridHeight
+  );
+}
+
 function getPositionsWithinRadius(center, radius) {
   const positions = [];
   const { gridWidth, gridHeight } = state.window;
+
   const startX = Math.max(center.x - radius, 0);
   const endX = Math.min(center.x + radius, gridWidth - 1);
   const startY = Math.max(center.y - radius, 0);
@@ -76,71 +142,9 @@ function getPositionsWithinRadius(center, radius) {
   return positions;
 }
 
-function draw(event) {
-  if (Input.mouse.isDown) {
-    const x = clamp(Input.mouse.gridX, 0, state.window.gridWidth - 1);
-    const y = clamp(Input.mouse.gridY, 0, state.window.gridHeight - 1);
-    // console.log("Drawing at", x, y);
-    // state.drawArray[y * state.window.gridWidth + x] = 1;
-    const radius = state.config.input.brushSize;
-    const positions = getPositionsWithinRadius({ x, y }, radius);
-    for (const { x, y } of positions) {
-      state.drawBuffer.push({ x, y });
-    }
-    // state.drawBuffer.push({ x, y });
-  }
-}
-
-/*
-function updateMousePos(event) {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const gridWidth = width / state.cellSize;
-  const gridHeight = height / state.cellSize;
-  const x = Math.floor((event.clientX / width) * gridWidth);
-  const y = Math.floor(gridHeight - (event.clientY / height) * gridHeight);
-
-  Input.mouse.clientX = event.clientX;
-  Input.mouse.clientY = event.clientY;
-  Input.mouse.gridX = x;
-  Input.mouse.gridY = y;
-}
-*/
-
-function configureGrid() {
-  state.window.gridWidth = Math.floor(window.innerWidth / state.cellSize);
-  state.window.gridHeight = Math.floor(window.innerHeight / state.cellSize);
-  state.drawArray = new Float32Array(
-    state.window.gridWidth * state.window.gridHeight
-  ); // This breaks input on resize.
-}
-
-
-function updateOnResize() {
-  // Calculate new cell width and height that fit the new window size
-  //state.cellWidth = window.innerWidth / state.window.gridWidth;
-  //state.cellHeight = window.innerHeight / state.window.gridHeight;
-
-  // Update config
-  //state.config.core.grid.cellWidth = state.cellWidth;
-  //state.config.core.grid.cellHeight = state.cellHeight;
-}
-
-function updateMousePos(event) {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const gridWidth = state.window.gridWidth;
-  const gridHeight = state.window.gridHeight;
-
-  const x = Math.floor((event.clientX / width) * gridWidth);
-  const y = Math.floor(gridHeight - (event.clientY / height) * gridHeight);
-
-  Input.mouse.clientX = event.clientX;
-  Input.mouse.clientY = event.clientY;
-  Input.mouse.gridX = clamp(x, 0, gridWidth - 1);
-  Input.mouse.gridY = clamp(y, 0, gridHeight - 1);
-}
-
+// ----------------------------------------------------------------
+// Public API
+// ----------------------------------------------------------------
 export function GetDrawArray() {
   return state.drawArray;
 }
@@ -160,6 +164,7 @@ export function Init(config) {
     throw new Error("Input already initialized.");
   }
 
+  // Save config and create proxy
   state.config = config;
   state.proxy = deepProxy(Input);
   state.initialized = true;
@@ -167,16 +172,8 @@ export function Init(config) {
   Input.tickRate = config.input.tickRate;
 
   configureGrid();
-  // window.addEventListener("resize", () => {
-  //   updateOnResize();
-  //   if (!state.alertIssued) {
-  //     alert(
-  //       "Window resizing not yet supported by input module. Please refresh the page."
-  //     );
-  //     state.alertIssued = true;
-  //   }
-  // });
-
+  
+  // Attach event listeners
   document.addEventListener("mousedown", toggleMouseDown);
   document.addEventListener("mousedown", draw);
   document.addEventListener("mousemove", updateMousePos);
@@ -187,6 +184,7 @@ export function Init(config) {
 }
 
 export function Tick(context, deltaTime) {
+  // Compare decay rate
   const decayRate =
     (state.config.input.decay * Math.PI * state.config.input.brushSize) ^ 2;
   state.drawArray.fill(0);
@@ -196,6 +194,7 @@ export function Tick(context, deltaTime) {
     state.drawArray[index] = 1;
   }
 
+  // Apply decay by shifting from buffer
   while (state.drawBuffer.length > 0 && state.decayCounter < decayRate) {
     state.drawBuffer.shift();
     state.decayCounter++;
