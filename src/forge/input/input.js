@@ -91,6 +91,7 @@ function draw(event) {
   }
 }
 
+/*
 function updateMousePos(event) {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -104,13 +105,40 @@ function updateMousePos(event) {
   Input.mouse.gridX = x;
   Input.mouse.gridY = y;
 }
+*/
 
-function updateOnResize() {
+function configureGrid() {
   state.window.gridWidth = Math.floor(window.innerWidth / state.cellSize);
   state.window.gridHeight = Math.floor(window.innerHeight / state.cellSize);
   state.drawArray = new Float32Array(
     state.window.gridWidth * state.window.gridHeight
   ); // This breaks input on resize.
+}
+
+
+function updateOnResize() {
+  // Calculate new cell width and height that fit the new window size
+  //state.cellWidth = window.innerWidth / state.window.gridWidth;
+  //state.cellHeight = window.innerHeight / state.window.gridHeight;
+
+  // Update config
+  //state.config.core.grid.cellWidth = state.cellWidth;
+  //state.config.core.grid.cellHeight = state.cellHeight;
+}
+
+function updateMousePos(event) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const gridWidth = state.window.gridWidth;
+  const gridHeight = state.window.gridHeight;
+
+  const x = Math.floor((event.clientX / width) * gridWidth);
+  const y = Math.floor(gridHeight - (event.clientY / height) * gridHeight);
+
+  Input.mouse.clientX = event.clientX;
+  Input.mouse.clientY = event.clientY;
+  Input.mouse.gridX = clamp(x, 0, gridWidth - 1);
+  Input.mouse.gridY = clamp(y, 0, gridHeight - 1);
 }
 
 export function GetDrawArray() {
@@ -138,7 +166,7 @@ export function Init(config) {
   state.cellSize = config.core.grid.cellSize;
   Input.tickRate = config.input.tickRate;
 
-  updateOnResize();
+  configureGrid();
   // window.addEventListener("resize", () => {
   //   updateOnResize();
   //   if (!state.alertIssued) {
